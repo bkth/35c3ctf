@@ -1,0 +1,1559 @@
+diff --git a/js/src/builtin/TestingFunctions.cpp b/js/src/builtin/TestingFunctions.cpp
+index d8187e5594f7..b412e1767bab 100644
+--- a/js/src/builtin/TestingFunctions.cpp
++++ b/js/src/builtin/TestingFunctions.cpp
+@@ -5194,709 +5194,10 @@ BaselineCompile(JSContext* cx, unsigned argc, Value* vp)
+ }
+ 
+ static const JSFunctionSpecWithHelp TestingFunctions[] = {
+-    JS_FN_HELP("gc", ::GC, 0, 0,
+-"gc([obj] | 'zone' [, 'shrinking'])",
+-"  Run the garbage collector. When obj is given, GC only its zone.\n"
+-"  If 'zone' is given, GC any zones that were scheduled for\n"
+-"  GC via schedulegc.\n"
+-"  If 'shrinking' is passed as the optional second argument, perform a\n"
+-"  shrinking GC rather than a normal GC."),
+-
+-    JS_FN_HELP("minorgc", ::MinorGC, 0, 0,
+-"minorgc([aboutToOverflow])",
+-"  Run a minor collector on the Nursery. When aboutToOverflow is true, marks\n"
+-"  the store buffer as about-to-overflow before collecting."),
+-
+-    JS_FN_HELP("gcparam", GCParameter, 2, 0,
+-"gcparam(name [, value])",
+-"  Wrapper for JS_[GS]etGCParameter. The name is one of:" GC_PARAMETER_ARGS_LIST),
+-
+-    JS_FN_HELP("relazifyFunctions", RelazifyFunctions, 0, 0,
+-"relazifyFunctions(...)",
+-"  Perform a GC and allow relazification of functions. Accepts the same\n"
+-"  arguments as gc()."),
+-
+-    JS_FN_HELP("getBuildConfiguration", GetBuildConfiguration, 0, 0,
+-"getBuildConfiguration()",
+-"  Return an object describing some of the configuration options SpiderMonkey\n"
+-"  was built with."),
+-
+-    JS_FN_HELP("hasChild", HasChild, 0, 0,
+-"hasChild(parent, child)",
+-"  Return true if |child| is a child of |parent|, as determined by a call to\n"
+-"  TraceChildren"),
+-
+-    JS_FN_HELP("setSavedStacksRNGState", SetSavedStacksRNGState, 1, 0,
+-"setSavedStacksRNGState(seed)",
+-"  Set this compartment's SavedStacks' RNG state.\n"),
+-
+-    JS_FN_HELP("getSavedFrameCount", GetSavedFrameCount, 0, 0,
+-"getSavedFrameCount()",
+-"  Return the number of SavedFrame instances stored in this compartment's\n"
+-"  SavedStacks cache."),
+-
+-    JS_FN_HELP("clearSavedFrames", ClearSavedFrames, 0, 0,
+-"clearSavedFrames()",
+-"  Empty the current compartment's cache of SavedFrame objects, so that\n"
+-"  subsequent stack captures allocate fresh objects to represent frames.\n"
+-"  Clear the current stack's LiveSavedFrameCaches."),
+-
+-    JS_FN_HELP("saveStack", SaveStack, 0, 0,
+-"saveStack([maxDepth [, compartment]])",
+-"  Capture a stack. If 'maxDepth' is given, capture at most 'maxDepth' number\n"
+-"  of frames. If 'compartment' is given, allocate the js::SavedFrame instances\n"
+-"  with the given object's compartment."),
+-
+-    JS_FN_HELP("captureFirstSubsumedFrame", CaptureFirstSubsumedFrame, 1, 0,
+-"saveStack(object [, shouldIgnoreSelfHosted = true]])",
+-"  Capture a stack back to the first frame whose principals are subsumed by the\n"
+-"  object's compartment's principals. If 'shouldIgnoreSelfHosted' is given,\n"
+-"  control whether self-hosted frames are considered when checking principals."),
+-
+-    JS_FN_HELP("callFunctionFromNativeFrame", CallFunctionFromNativeFrame, 1, 0,
+-"callFunctionFromNativeFrame(function)",
+-"  Call 'function' with a (C++-)native frame on stack.\n"
+-"  Required for testing that SaveStack properly handles native frames."),
+-
+-    JS_FN_HELP("callFunctionWithAsyncStack", CallFunctionWithAsyncStack, 0, 0,
+-"callFunctionWithAsyncStack(function, stack, asyncCause)",
+-"  Call 'function', using the provided stack as the async stack responsible\n"
+-"  for the call, and propagate its return value or the exception it throws.\n"
+-"  The function is called with no arguments, and 'this' is 'undefined'. The\n"
+-"  specified |asyncCause| is attached to the provided stack frame."),
+-
+-    JS_FN_HELP("enableTrackAllocations", EnableTrackAllocations, 0, 0,
+-"enableTrackAllocations()",
+-"  Start capturing the JS stack at every allocation. Note that this sets an\n"
+-"  object metadata callback that will override any other object metadata\n"
+-"  callback that may be set."),
+-
+-    JS_FN_HELP("disableTrackAllocations", DisableTrackAllocations, 0, 0,
+-"disableTrackAllocations()",
+-"  Stop capturing the JS stack at every allocation."),
+-
+-    JS_FN_HELP("newExternalString", NewExternalString, 1, 0,
+-"newExternalString(str)",
+-"  Copies str's chars and returns a new external string."),
+-
+-    JS_FN_HELP("newMaybeExternalString", NewMaybeExternalString, 1, 0,
+-"newMaybeExternalString(str)",
+-"  Like newExternalString but uses the JS_NewMaybeExternalString API."),
+-
+-    JS_FN_HELP("ensureFlatString", EnsureFlatString, 1, 0,
+-"ensureFlatString(str)",
+-"  Ensures str is a flat (null-terminated) string and returns it."),
+-
+-    JS_FN_HELP("representativeStringArray", RepresentativeStringArray, 0, 0,
+-"representativeStringArray()",
+-"  Returns an array of strings that represent the various internal string\n"
+-"  types and character encodings."),
+-
+-#if defined(DEBUG) || defined(JS_OOM_BREAKPOINT)
+-
+-    JS_FN_HELP("oomThreadTypes", OOMThreadTypes, 0, 0,
+-"oomThreadTypes()",
+-"  Get the number of thread types that can be used as an argument for\n"
+-"  oomAfterAllocations() and oomAtAllocation()."),
+-
+-    JS_FN_HELP("oomAfterAllocations", OOMAfterAllocations, 2, 0,
+-"oomAfterAllocations(count [,threadType])",
+-"  After 'count' js_malloc memory allocations, fail every following allocation\n"
+-"  (return nullptr). The optional thread type limits the effect to the\n"
+-"  specified type of helper thread."),
+-
+-    JS_FN_HELP("oomAtAllocation", OOMAtAllocation, 2, 0,
+-"oomAtAllocation(count [,threadType])",
+-"  After 'count' js_malloc memory allocations, fail the next allocation\n"
+-"  (return nullptr). The optional thread type limits the effect to the\n"
+-"  specified type of helper thread."),
+-
+-    JS_FN_HELP("resetOOMFailure", ResetOOMFailure, 0, 0,
+-"resetOOMFailure()",
+-"  Remove the allocation failure scheduled by either oomAfterAllocations() or\n"
+-"  oomAtAllocation() and return whether any allocation had been caused to fail."),
+-
+-    JS_FN_HELP("oomTest", OOMTest, 0, 0,
+-"oomTest(function, [expectExceptionOnFailure = true])",
+-"  Test that the passed function behaves correctly under OOM conditions by\n"
+-"  repeatedly executing it and simulating allocation failure at successive\n"
+-"  allocations until the function completes without seeing a failure.\n"
+-"  By default this tests that an exception is raised if execution fails, but\n"
+-"  this can be disabled by passing false as the optional second parameter.\n"
+-"  This is also disabled when --fuzzing-safe is specified."),
+-
+-    JS_FN_HELP("stackTest", StackTest, 0, 0,
+-"stackTest(function, [expectExceptionOnFailure = true])",
+-"  This function behaves exactly like oomTest with the difference that\n"
+-"  instead of simulating regular OOM conditions, it simulates the engine\n"
+-"  running out of stack space (failing recursion check)."),
+-
+-    JS_FN_HELP("interruptTest", InterruptTest, 0, 0,
+-"interruptTest(function)",
+-"  This function simulates interrupts similar to how oomTest simulates OOM conditions."),
+-
+-#endif // defined(DEBUG) || defined(JS_OOM_BREAKPOINT)
+-
+-    JS_FN_HELP("newRope", NewRope, 3, 0,
+-"newRope(left, right[, options])",
+-"  Creates a rope with the given left/right strings.\n"
+-"  Available options:\n"
+-"    nursery: bool - force the string to be created in/out of the nursery, if possible.\n"),
+-
+-    JS_FN_HELP("settlePromiseNow", SettlePromiseNow, 1, 0,
+-"settlePromiseNow(promise)",
+-"  'Settle' a 'promise' immediately. This just marks the promise as resolved\n"
+-"  with a value of `undefined` and causes the firing of any onPromiseSettled\n"
+-"  hooks set on Debugger instances that are observing the given promise's\n"
+-"  global as a debuggee."),
+-    JS_FN_HELP("getWaitForAllPromise", GetWaitForAllPromise, 1, 0,
+-"getWaitForAllPromise(densePromisesArray)",
+-"  Calls the 'GetWaitForAllPromise' JSAPI function and returns the result\n"
+-"  Promise."),
+-JS_FN_HELP("resolvePromise", ResolvePromise, 2, 0,
+-"resolvePromise(promise, resolution)",
+-"  Resolve a Promise by calling the JSAPI function JS::ResolvePromise."),
+-JS_FN_HELP("rejectPromise", RejectPromise, 2, 0,
+-"rejectPromise(promise, reason)",
+-"  Reject a Promise by calling the JSAPI function JS::RejectPromise."),
+-
+-JS_FN_HELP("streamsAreEnabled", StreamsAreEnabled, 0, 0,
+-"streamsAreEnabled()",
+-"  Returns a boolean indicating whether WHATWG Streams are enabled for the current compartment."),
+-
+-    JS_FN_HELP("makeFinalizeObserver", MakeFinalizeObserver, 0, 0,
+-"makeFinalizeObserver()",
+-"  Get a special object whose finalization increases the counter returned\n"
+-"  by the finalizeCount function."),
+-
+-    JS_FN_HELP("finalizeCount", FinalizeCount, 0, 0,
+-"finalizeCount()",
+-"  Return the current value of the finalization counter that is incremented\n"
+-"  each time an object returned by the makeFinalizeObserver is finalized."),
+-
+-    JS_FN_HELP("resetFinalizeCount", ResetFinalizeCount, 0, 0,
+-"resetFinalizeCount()",
+-"  Reset the value returned by finalizeCount()."),
+-
+-    JS_FN_HELP("gcPreserveCode", GCPreserveCode, 0, 0,
+-"gcPreserveCode()",
+-"  Preserve JIT code during garbage collections."),
+-
+-#ifdef JS_GC_ZEAL
+-    JS_FN_HELP("gczeal", GCZeal, 2, 0,
+-"gczeal(level, [N])",
+-gc::ZealModeHelpText),
+-
+-    JS_FN_HELP("schedulegc", ScheduleGC, 1, 0,
+-"schedulegc([num | obj | string])",
+-"  If num is given, schedule a GC after num allocations.\n"
+-"  If obj is given, schedule a GC of obj's zone.\n"
+-"  If string is given, schedule a GC of the string's zone if possible.\n"
+-"  Returns the number of allocations before the next trigger."),
+-
+-    JS_FN_HELP("selectforgc", SelectForGC, 0, 0,
+-"selectforgc(obj1, obj2, ...)",
+-"  Schedule the given objects to be marked in the next GC slice."),
+-
+-    JS_FN_HELP("verifyprebarriers", VerifyPreBarriers, 0, 0,
+-"verifyprebarriers()",
+-"  Start or end a run of the pre-write barrier verifier."),
+-
+-    JS_FN_HELP("verifypostbarriers", VerifyPostBarriers, 0, 0,
+-"verifypostbarriers()",
+-"  Does nothing (the post-write barrier verifier has been remove)."),
+-
+-    JS_FN_HELP("gcstate", GCState, 0, 0,
+-"gcstate()",
+-"  Report the global GC state."),
+-
+-    JS_FN_HELP("deterministicgc", DeterministicGC, 1, 0,
+-"deterministicgc(true|false)",
+-"  If true, only allow determinstic GCs to run."),
+-
+-    JS_FN_HELP("dumpGCArenaInfo", DumpGCArenaInfo, 0, 0,
+-"dumpGCArenaInfo()",
+-"  Prints information about the different GC things and how they are arranged\n"
+-"  in arenas.\n"),
+-#endif
+-
+-    JS_FN_HELP("startgc", StartGC, 1, 0,
+-"startgc([n [, 'shrinking']])",
+-"  Start an incremental GC and run a slice that processes about n objects.\n"
+-"  If 'shrinking' is passesd as the optional second argument, perform a\n"
+-"  shrinking GC rather than a normal GC."),
+-
+-    JS_FN_HELP("gcslice", GCSlice, 1, 0,
+-"gcslice([n])",
+-"  Start or continue an an incremental GC, running a slice that processes about n objects."),
+-
+-    JS_FN_HELP("abortgc", AbortGC, 1, 0,
+-"abortgc()",
+-"  Abort the current incremental GC."),
+-
+-    JS_FN_HELP("fullcompartmentchecks", FullCompartmentChecks, 1, 0,
+-"fullcompartmentchecks(true|false)",
+-"  If true, check for compartment mismatches before every GC."),
+-
+-    JS_FN_HELP("nondeterministicGetWeakMapKeys", NondeterministicGetWeakMapKeys, 1, 0,
+-"nondeterministicGetWeakMapKeys(weakmap)",
+-"  Return an array of the keys in the given WeakMap."),
+-
+-    JS_FN_HELP("internalConst", InternalConst, 1, 0,
+-"internalConst(name)",
+-"  Query an internal constant for the engine. See InternalConst source for\n"
+-"  the list of constant names."),
+-
+-    JS_FN_HELP("isProxy", IsProxy, 1, 0,
+-"isProxy(obj)",
+-"  If true, obj is a proxy of some sort"),
+-
+-    JS_FN_HELP("dumpHeap", DumpHeap, 1, 0,
+-"dumpHeap(['collectNurseryBeforeDump'], [filename])",
+-"  Dump reachable and unreachable objects to the named file, or to stdout.  If\n"
+-"  'collectNurseryBeforeDump' is specified, a minor GC is performed first,\n"
+-"  otherwise objects in the nursery are ignored."),
+-
+-    JS_FN_HELP("terminate", Terminate, 0, 0,
+-"terminate()",
+-"  Terminate JavaScript execution, as if we had run out of\n"
+-"  memory or been terminated by the slow script dialog."),
+-
+-    JS_FN_HELP("readGeckoProfilingStack", ReadGeckoProfilingStack, 0, 0,
+-"readGeckoProfilingStack()",
+-"  Reads the jit stack using ProfilingFrameIterator."),
+-
+-    JS_FN_HELP("enableOsiPointRegisterChecks", EnableOsiPointRegisterChecks, 0, 0,
+-"enableOsiPointRegisterChecks()",
+-"  Emit extra code to verify live regs at the start of a VM call are not\n"
+-"  modified before its OsiPoint."),
+-
+-    JS_FN_HELP("displayName", DisplayName, 1, 0,
+-"displayName(fn)",
+-"  Gets the display name for a function, which can possibly be a guessed or\n"
+-"  inferred name based on where the function was defined. This can be\n"
+-"  different from the 'name' property on the function."),
+-
+-    JS_FN_HELP("isAsmJSCompilationAvailable", IsAsmJSCompilationAvailable, 0, 0,
+-"isAsmJSCompilationAvailable",
+-"  Returns whether asm.js compilation is currently available or whether it is disabled\n"
+-"  (e.g., by the debugger)."),
+-
+-    JS_FN_HELP("isSimdAvailable", IsSimdAvailable, 0, 0,
+-"isSimdAvailable",
+-"  Returns true if SIMD extensions are supported on this platform."),
+-
+-    JS_FN_HELP("getJitCompilerOptions", GetJitCompilerOptions, 0, 0,
+-"getCompilerOptions()",
+-"  Return an object describing some of the JIT compiler options.\n"),
+-
+-    JS_FN_HELP("isAsmJSModule", IsAsmJSModule, 1, 0,
+-"isAsmJSModule(fn)",
+-"  Returns whether the given value is a function containing \"use asm\" that has been\n"
+-"  validated according to the asm.js spec."),
+-
+-    JS_FN_HELP("isAsmJSModuleLoadedFromCache", IsAsmJSModuleLoadedFromCache, 1, 0,
+-"isAsmJSModuleLoadedFromCache(fn)",
+-"  Return whether the given asm.js module function has been loaded directly\n"
+-"  from the cache. This function throws an error if fn is not a validated asm.js\n"
+-"  module."),
+-
+-    JS_FN_HELP("isAsmJSFunction", IsAsmJSFunction, 1, 0,
+-"isAsmJSFunction(fn)",
+-"  Returns whether the given value is a nested function in an asm.js module that has been\n"
+-"  both compile- and link-time validated."),
+-
+-    JS_FN_HELP("wasmIsSupported", WasmIsSupported, 0, 0,
+-"wasmIsSupported()",
+-"  Returns a boolean indicating whether WebAssembly is supported on the current device."),
+-
+-    JS_FN_HELP("wasmIsSupportedByHardware", WasmIsSupportedByHardware, 0, 0,
+-"wasmIsSupportedByHardware()",
+-"  Returns a boolean indicating whether WebAssembly is supported on the current hardware (regardless of whether we've enabled support)."),
+-
+-    JS_FN_HELP("wasmDebuggingIsSupported", WasmDebuggingIsSupported, 0, 0,
+-"wasmDebuggingIsSupported()",
+-"  Returns a boolean indicating whether WebAssembly debugging is supported on the current device;\n"
+-"  returns false also if WebAssembly is not supported"),
+-
+-    JS_FN_HELP("wasmThreadsSupported", WasmThreadsSupported, 0, 0,
+-"wasmThreadsSupported()",
+-"  Returns a boolean indicating whether the WebAssembly threads proposal is\n"
+-"  supported on the current device."),
+-
+-    JS_FN_HELP("wasmSaturatingTruncationSupported", WasmSaturatingTruncationSupported, 0, 0,
+-"wasmSaturatingTruncationSupported()",
+-"  Returns a boolean indicating whether the WebAssembly saturating truncates opcodes are\n"
+-"  supported on the current device."),
+-
+-    JS_FN_HELP("wasmBulkMemSupported", WasmBulkMemSupported, 0, 0,
+-"wasmBulkMemSupported()",
+-"  Returns a boolean indicating whether the WebAssembly bulk memory proposal is\n"
+-"  supported on the current device."),
+-
+-    JS_FN_HELP("wasmCompileMode", WasmCompileMode, 0, 0,
+-"wasmCompileMode()",
+-"  Returns a string indicating the available compile policy: 'baseline', 'ion',\n"
+-"  'baseline-or-ion', or 'disabled' (if wasm is not available at all)."),
+-
+-    JS_FN_HELP("wasmTextToBinary", WasmTextToBinary, 1, 0,
+-"wasmTextToBinary(str)",
+-"  Translates the given text wasm module into its binary encoding."),
+-
+-    JS_FN_HELP("wasmExtractCode", WasmExtractCode, 1, 0,
+-"wasmExtractCode(module[, tier])",
+-"  Extracts generated machine code from WebAssembly.Module.  The tier is a string,\n"
+-"  'stable', 'best', 'baseline', or 'ion'; the default is 'stable'.  If the request\n"
+-"  cannot be satisfied then null is returned.  If the request is 'ion' then block\n"
+-"  until background compilation is complete."),
+-
+-    JS_FN_HELP("wasmHasTier2CompilationCompleted", WasmHasTier2CompilationCompleted, 1, 0,
+-"wasmHasTier2CompilationCompleted(module)",
+-"  Returns a boolean indicating whether a given module has finished compiled code for tier2. \n"
+-"This will return true early if compilation isn't two-tiered. "),
+-
+-    JS_FN_HELP("wasmGcEnabled", WasmGcEnabled, 1, 0,
+-"wasmGcEnabled(bool)",
+-"  Returns a boolean indicating whether the WebAssembly GC support is enabled."),
+-
+-    JS_FN_HELP("isLazyFunction", IsLazyFunction, 1, 0,
+-"isLazyFunction(fun)",
+-"  True if fun is a lazy JSFunction."),
+-
+-    JS_FN_HELP("isRelazifiableFunction", IsRelazifiableFunction, 1, 0,
+-"isRelazifiableFunction(fun)",
+-"  True if fun is a JSFunction with a relazifiable JSScript."),
+-
+-    JS_FN_HELP("enableShellAllocationMetadataBuilder", EnableShellAllocationMetadataBuilder, 0, 0,
+-"enableShellAllocationMetadataBuilder()",
+-"  Use ShellAllocationMetadataBuilder to supply metadata for all newly created objects."),
+-
+-    JS_FN_HELP("getAllocationMetadata", GetAllocationMetadata, 1, 0,
+-"getAllocationMetadata(obj)",
+-"  Get the metadata for an object."),
+-
+-    JS_INLINABLE_FN_HELP("bailout", testingFunc_bailout, 0, 0, TestBailout,
+-"bailout()",
+-"  Force a bailout out of ionmonkey (if running in ionmonkey)."),
+-
+-    JS_FN_HELP("bailAfter", testingFunc_bailAfter, 1, 0,
+-"bailAfter(number)",
+-"  Start a counter to bail once after passing the given amount of possible bailout positions in\n"
+-"  ionmonkey.\n"),
+-
+-
+-    JS_FN_HELP("inJit", testingFunc_inJit, 0, 0,
+-"inJit()",
+-"  Returns true when called within (jit-)compiled code. When jit compilation is disabled this\n"
+-"  function returns an error string. This function returns false in all other cases.\n"
+-"  Depending on truthiness, you should continue to wait for compilation to happen or stop execution.\n"),
+-
+-    JS_FN_HELP("inIon", testingFunc_inIon, 0, 0,
+-"inIon()",
+-"  Returns true when called within ion. When ion is disabled or when compilation is abnormally\n"
+-"  slow to start, this function returns an error string. Otherwise, this function returns false.\n"
+-"  This behaviour ensures that a falsy value means that we are not in ion, but expect a\n"
+-"  compilation to occur in the future. Conversely, a truthy value means that we are either in\n"
+-"  ion or that there is litle or no chance of ion ever compiling the current script."),
+-
+-    JS_FN_HELP("assertJitStackInvariants", TestingFunc_assertJitStackInvariants, 0, 0,
+-"assertJitStackInvariants()",
+-"  Iterates the Jit stack and check that stack invariants hold."),
+-
+-    JS_FN_HELP("setJitCompilerOption", SetJitCompilerOption, 2, 0,
+-"setCompilerOption(<option>, <number>)",
+-"  Set a compiler option indexed in JSCompileOption enum to a number.\n"),
+-
+-    JS_FN_HELP("setIonCheckGraphCoherency", SetIonCheckGraphCoherency, 1, 0,
+-"setIonCheckGraphCoherency(bool)",
+-"  Set whether Ion should perform graph consistency (DEBUG-only) assertions. These assertions\n"
+-"  are valuable and should be generally enabled, however they can be very expensive for large\n"
+-"  (wasm) programs."),
+-
+-    JS_FN_HELP("serialize", Serialize, 1, 0,
+-"serialize(data, [transferables, [policy]])",
+-"  Serialize 'data' using JS_WriteStructuredClone. Returns a structured\n"
+-"  clone buffer object. 'policy' may be an options hash. Valid keys:\n"
+-"    'SharedArrayBuffer' - either 'allow' (the default) or 'deny'\n"
+-"      to specify whether SharedArrayBuffers may be serialized.\n"
+-"    'scope' - SameProcessSameThread, SameProcessDifferentThread,\n"
+-"      DifferentProcess, or DifferentProcessForIndexedDB. Determines how some\n"
+-"      values will be serialized. Clone buffers may only be deserialized with a\n"
+-"      compatible scope. NOTE - For DifferentProcess/DifferentProcessForIndexedDB,\n"
+-"      must also set SharedArrayBuffer:'deny' if data contains any shared memory\n"
+-"      object."),
+-
+-    JS_FN_HELP("deserialize", Deserialize, 1, 0,
+-"deserialize(clonebuffer[, opts])",
+-"  Deserialize data generated by serialize. 'opts' is an options hash with one\n"
+-"  recognized key 'scope', which limits the clone buffers that are considered\n"
+-"  valid. Allowed values: 'SameProcessSameThread', 'SameProcessDifferentThread',\n"
+-"  'DifferentProcess', and 'DifferentProcessForIndexedDB'. So for example, a\n"
+-"  DifferentProcessForIndexedDB clone buffer may be deserialized in any scope, but\n"
+-"  a SameProcessSameThread clone buffer cannot be deserialized in a\n"
+-"  DifferentProcess scope."),
+-
+-    JS_FN_HELP("detachArrayBuffer", DetachArrayBuffer, 1, 0,
+-"detachArrayBuffer(buffer)",
+-"  Detach the given ArrayBuffer object from its memory, i.e. as if it\n"
+-"  had been transferred to a WebWorker."),
+-
+-    JS_FN_HELP("helperThreadCount", HelperThreadCount, 0, 0,
+-"helperThreadCount()",
+-"  Returns the number of helper threads available for off-thread tasks."),
+-
+-    JS_FN_HELP("enableShapeConsistencyChecks", EnableShapeConsistencyChecks, 0, 0,
+-"enableShapeConsistencyChecks()",
+-"  Enable some slow Shape assertions.\n"),
+-
+-#ifdef JS_TRACE_LOGGING
+-    JS_FN_HELP("startTraceLogger", EnableTraceLogger, 0, 0,
+-"startTraceLogger()",
+-"  Start logging this thread.\n"),
+-
+-    JS_FN_HELP("stopTraceLogger", DisableTraceLogger, 0, 0,
+-"stopTraceLogger()",
+-"  Stop logging this thread."),
+-#endif
+-
+-    JS_FN_HELP("reportOutOfMemory", ReportOutOfMemory, 0, 0,
+-"reportOutOfMemory()",
+-"  Report OOM, then clear the exception and return undefined. For crash testing."),
+-
+-    JS_FN_HELP("throwOutOfMemory", ThrowOutOfMemory, 0, 0,
+-"throwOutOfMemory()",
+-"  Throw out of memory exception, for OOM handling testing."),
+-
+-    JS_FN_HELP("reportLargeAllocationFailure", ReportLargeAllocationFailure, 0, 0,
+-"reportLargeAllocationFailure()",
+-"  Call the large allocation failure callback, as though a large malloc call failed,\n"
+-"  then return undefined. In Gecko, this sends a memory pressure notification, which\n"
+-"  can free up some memory."),
+-
+-    JS_FN_HELP("findPath", FindPath, 2, 0,
+-"findPath(start, target)",
+-"  Return an array describing one of the shortest paths of GC heap edges from\n"
+-"  |start| to |target|, or |undefined| if |target| is unreachable from |start|.\n"
+-"  Each element of the array is either of the form:\n"
+-"    { node: <object or string>, edge: <string describing edge from node> }\n"
+-"  if the node is a JavaScript object or value; or of the form:\n"
+-"    { type: <string describing node>, edge: <string describing edge> }\n"
+-"  if the node is some internal thing that is not a proper JavaScript value\n"
+-"  (like a shape or a scope chain element). The destination of the i'th array\n"
+-"  element's edge is the node of the i+1'th array element; the destination of\n"
+-"  the last array element is implicitly |target|.\n"),
+-
+-    JS_FN_HELP("shortestPaths", ShortestPaths, 3, 0,
+-"shortestPaths(start, targets, maxNumPaths)",
+-"  Return an array of arrays of shortest retaining paths. There is an array of\n"
+-"  shortest retaining paths for each object in |targets|. The maximum number of\n"
+-"  paths in each of those arrays is bounded by |maxNumPaths|. Each element in a\n"
+-"  path is of the form |{ predecessor, edge }|."),
+-
+-#if defined(DEBUG) || defined(JS_JITSPEW)
+-    JS_FN_HELP("dumpObject", DumpObject, 1, 0,
+-"dumpObject()",
+-"  Dump an internal representation of an object."),
+-#endif
+-
+-    JS_FN_HELP("sharedMemoryEnabled", SharedMemoryEnabled, 0, 0,
+-"sharedMemoryEnabled()",
+-"  Return true if SharedArrayBuffer and Atomics are enabled"),
+-
+-    JS_FN_HELP("sharedArrayRawBufferCount", SharedArrayRawBufferCount, 0, 0,
+-"sharedArrayRawBufferCount()",
+-"  Return the number of live SharedArrayRawBuffer objects"),
+-
+-    JS_FN_HELP("sharedArrayRawBufferRefcount", SharedArrayRawBufferRefcount, 0, 0,
+-"sharedArrayRawBufferRefcount(sab)",
+-"  Return the reference count of the SharedArrayRawBuffer object held by sab"),
+-
+-#ifdef NIGHTLY_BUILD
+-    JS_FN_HELP("objectAddress", ObjectAddress, 1, 0,
+-"objectAddress(obj)",
+-"  Return the current address of the object. For debugging only--this\n"
+-"  address may change during a moving GC."),
+-
+-    JS_FN_HELP("sharedAddress", SharedAddress, 1, 0,
+-"sharedAddress(obj)",
+-"  Return the address of the shared storage of a SharedArrayBuffer."),
+-#endif
+-
+-    JS_FN_HELP("evalReturningScope", EvalReturningScope, 1, 0,
+-"evalReturningScope(scriptStr, [global])",
+-"  Evaluate the script in a new scope and return the scope.\n"
+-"  If |global| is present, clone the script to |global| before executing."),
+-
+-    JS_FN_HELP("cloneAndExecuteScript", ShellCloneAndExecuteScript, 2, 0,
+-"cloneAndExecuteScript(source, global)",
+-"  Compile |source| in the current compartment, clone it into |global|'s\n"
+-"  compartment, and run it there."),
+-
+-    JS_FN_HELP("backtrace", DumpBacktrace, 1, 0,
+-"backtrace()",
+-"  Dump out a brief backtrace."),
+-
+-    JS_FN_HELP("getBacktrace", GetBacktrace, 1, 0,
+-"getBacktrace([options])",
+-"  Return the current stack as a string. Takes an optional options object,\n"
+-"  which may contain any or all of the boolean properties\n"
+-"    options.args - show arguments to each function\n"
+-"    options.locals - show local variables in each frame\n"
+-"    options.thisprops - show the properties of the 'this' object of each frame\n"),
+-
+-    JS_FN_HELP("byteSize", ByteSize, 1, 0,
+-"byteSize(value)",
+-"  Return the size in bytes occupied by |value|, or |undefined| if value\n"
+-"  is not allocated in memory.\n"),
+-
+-    JS_FN_HELP("byteSizeOfScript", ByteSizeOfScript, 1, 0,
+-"byteSizeOfScript(f)",
+-"  Return the size in bytes occupied by the function |f|'s JSScript.\n"),
+-
+-    JS_FN_HELP("setImmutablePrototype", SetImmutablePrototype, 1, 0,
+-"setImmutablePrototype(obj)",
+-"  Try to make obj's [[Prototype]] immutable, such that subsequent attempts to\n"
+-"  change it will fail.  Return true if obj's [[Prototype]] was successfully made\n"
+-"  immutable (or if it already was immutable), false otherwise.  Throws in case\n"
+-"  of internal error, or if the operation doesn't even make sense (for example,\n"
+-"  because the object is a revoked proxy)."),
+-
+-#ifdef DEBUG
+-    JS_FN_HELP("dumpStringRepresentation", DumpStringRepresentation, 1, 0,
+-"dumpStringRepresentation(str)",
+-"  Print a human-readable description of how the string |str| is represented.\n"),
+-#endif
+-
+-    JS_FN_HELP("setLazyParsingDisabled", SetLazyParsingDisabled, 1, 0,
+-"setLazyParsingDisabled(bool)",
+-"  Explicitly disable lazy parsing in the current compartment.  The default is that lazy "
+-"  parsing is not explicitly disabled."),
+-
+-    JS_FN_HELP("setDiscardSource", SetDiscardSource, 1, 0,
+-"setDiscardSource(bool)",
+-"  Explicitly enable source discarding in the current compartment.  The default is that "
+-"  source discarding is not explicitly enabled."),
+-
+-    JS_FN_HELP("getConstructorName", GetConstructorName, 1, 0,
+-"getConstructorName(object)",
+-"  If the given object was created with `new Ctor`, return the constructor's display name. "
+-"  Otherwise, return null."),
+-
+-    JS_FN_HELP("allocationMarker", AllocationMarker, 0, 0,
+-"allocationMarker([options])",
+-"  Return a freshly allocated object whose [[Class]] name is\n"
+-"  \"AllocationMarker\". Such objects are allocated only by calls\n"
+-"  to this function, never implicitly by the system, making them\n"
+-"  suitable for use in allocation tooling tests. Takes an optional\n"
+-"  options object which may contain the following properties:\n"
+-"    * nursery: bool, whether to allocate the object in the nursery\n"),
+-
+-    JS_FN_HELP("setGCCallback", SetGCCallback, 1, 0,
+-"setGCCallback({action:\"...\", options...})",
+-"  Set the GC callback. action may be:\n"
+-"    'minorGC' - run a nursery collection\n"
+-"    'majorGC' - run a major collection, nesting up to a given 'depth'\n"),
+-
+-    JS_FN_HELP("getLcovInfo", GetLcovInfo, 1, 0,
+-"getLcovInfo(global)",
+-"  Generate LCOV tracefile for the given compartment.  If no global are provided then\n"
+-"  the current global is used as the default one.\n"),
+-
+-#ifdef DEBUG
+-    JS_FN_HELP("setRNGState", SetRNGState, 2, 0,
+-"setRNGState(seed0, seed1)",
+-"  Set this compartment's RNG state.\n"),
+-#endif
+-
+-#if defined(FUZZING) && defined(__AFL_COMPILER)
+-    JS_FN_HELP("aflloop", AflLoop, 1, 0,
+-"aflloop(max_cnt)",
+-"  Call the __AFL_LOOP() runtime function (see AFL docs)\n"),
+-#endif
+-
+-    JS_FN_HELP("monotonicNow", MonotonicNow, 0, 0,
+-"monotonicNow()",
+-"  Return a timestamp reflecting the current elapsed system time.\n"
+-"  This is monotonically increasing.\n"),
+-
+-    JS_FN_HELP("timeSinceCreation", TimeSinceCreation, 0, 0,
+-"TimeSinceCreation()",
+-"  Returns the time in milliseconds since process creation.\n"
+-"  This uses a clock compatible with the profiler.\n"),
+-
+-    JS_FN_HELP("isConstructor", IsConstructor, 1, 0,
+-"isConstructor(value)",
+-"  Returns whether the value is considered IsConstructor.\n"),
+-
+-    JS_FN_HELP("isLegacyIterator", IsLegacyIterator, 1, 0,
+-"isLegacyIterator(value)",
+-"  Returns whether the value is considered is a legacy iterator.\n"),
+-
+-    JS_FN_HELP("getTimeZone", GetTimeZone, 0, 0,
+-"getTimeZone()",
+-"  Get the current time zone.\n"),
+-
+-    JS_FN_HELP("getDefaultLocale", GetDefaultLocale, 0, 0,
+-"getDefaultLocale()",
+-"  Get the current default locale.\n"),
+-
+-    JS_FN_HELP("setTimeResolution", SetTimeResolution, 2, 0,
+-"setTimeResolution(resolution, jitter)",
+-"  Enables time clamping and jittering. Specify a time resolution in\n"
+-"  microseconds and whether or not to jitter\n"),
+-
+-    JS_FN_HELP("scriptedCallerGlobal", ScriptedCallerGlobal, 0, 0,
+-"scriptedCallerGlobal()",
+-"  Get the caller's global (or null). See JS::GetScriptedCallerGlobal.\n"),
+-
+-    JS_FN_HELP("objectGlobal", ObjectGlobal, 1, 0,
+-"objectGlobal(obj)",
+-"  Returns the object's global object or null if the object is a wrapper.\n"),
+-
+-    JS_FN_HELP("assertCorrectRealm", AssertCorrectRealm, 0, 0,
+-"assertCorrectRealm()",
+-"  Asserts cx->realm matches callee->raelm.\n"),
+-
+-    JS_FN_HELP("baselineCompile", BaselineCompile, 2, 0,
+-"baselineCompile([fun/code], forceDebugInstrumentation=false)",
+-"  Baseline-compiles the given JS function or script.\n"
+-"  Without arguments, baseline-compiles the caller's script; but note\n"
+-"  that extra boilerplate is needed afterwards to cause the VM to start\n"
+-"  running the jitcode rather than staying in the interpreter:\n"
+-"    baselineCompile();  for (var i=0; i<1; i++) {} ...\n"
+-"  The interpreter will enter the new jitcode at the loop header unless\n"
+-"  baselineCompile returned a string or threw an error.\n"),
+-
+     JS_FS_HELP_END
+ };
+ 
+ static const JSFunctionSpecWithHelp FuzzingUnsafeTestingFunctions[] = {
+-#ifdef DEBUG
+-    JS_FN_HELP("parseRegExp", ParseRegExp, 3, 0,
+-"parseRegExp(pattern[, flags[, match_only])",
+-"  Parses a RegExp pattern and returns a tree, potentially throwing."),
+-
+-    JS_FN_HELP("disRegExp", DisRegExp, 3, 0,
+-"disRegExp(regexp[, match_only[, input]])",
+-"  Dumps RegExp bytecode."),
+-#endif
+-
+-    JS_FN_HELP("getErrorNotes", GetErrorNotes, 1, 0,
+-"getErrorNotes(error)",
+-"  Returns an array of error notes."),
+-
+-    JS_FN_HELP("setTimeZone", SetTimeZone, 1, 0,
+-"setTimeZone(tzname)",
+-"  Set the 'TZ' environment variable to the given time zone and applies the new time zone.\n"
+-"  An empty string or undefined resets the time zone to its default value.\n"
+-"  NOTE: The input string is not validated and will be passed verbatim to setenv()."),
+-
+-JS_FN_HELP("setDefaultLocale", SetDefaultLocale, 1, 0,
+-"setDefaultLocale(locale)",
+-"  Set the runtime default locale to the given value.\n"
+-"  An empty string or undefined resets the runtime locale to its default value.\n"
+-"  NOTE: The input string is not fully validated, it must be a valid BCP-47 language tag."),
+-
+     JS_FS_HELP_END
+ };
+ 
+diff --git a/js/src/jit/MCallOptimize.cpp b/js/src/jit/MCallOptimize.cpp
+index aef52ec3180b..b692e655a34e 100644
+--- a/js/src/jit/MCallOptimize.cpp
++++ b/js/src/jit/MCallOptimize.cpp
+@@ -789,10 +789,10 @@ IonBuilder::inlineArrayPush(CallInfo& callInfo)
+     }
+ 
+     // XXX bug 1493903.
+-    if (callInfo.argc() != 1) {
+-        trackOptimizationOutcome(TrackedOutcome::CantInlineNativeBadForm);
+-        return InliningStatus_NotInlined;
+-    }
++    //if (callInfo.argc() != 1) {
++        //trackOptimizationOutcome(TrackedOutcome::CantInlineNativeBadForm);
++        //return InliningStatus_NotInlined;
++    //}
+ 
+     MDefinition* obj = convertUnboxedObjects(callInfo.thisArg());
+     for (uint32_t i = 0; i < callInfo.argc(); i++) {
+diff --git a/js/src/shell/OSObject.cpp b/js/src/shell/OSObject.cpp
+index 8b4500fe83b8..d82ada5395e8 100644
+--- a/js/src/shell/OSObject.cpp
++++ b/js/src/shell/OSObject.cpp
+@@ -589,39 +589,10 @@ osfile_close(JSContext* cx, unsigned argc, Value* vp) {
+ }
+ 
+ static const JSFunctionSpecWithHelp osfile_functions[] = {
+-    JS_FN_HELP("readFile", osfile_readFile, 1, 0,
+-"readFile(filename, [\"binary\"])",
+-"  Read entire contents of filename. Returns a string, unless \"binary\" is passed\n"
+-"  as the second argument, in which case it returns a Uint8Array. Filename is\n"
+-"  relative to the current working directory."),
+-
+-    JS_FN_HELP("readRelativeToScript", osfile_readRelativeToScript, 1, 0,
+-"readRelativeToScript(filename, [\"binary\"])",
+-"  Read filename into returned string. Filename is relative to the directory\n"
+-"  containing the current script."),
+-
+     JS_FS_HELP_END
+ };
+ 
+ static const JSFunctionSpecWithHelp osfile_unsafe_functions[] = {
+-    JS_FN_HELP("writeTypedArrayToFile", osfile_writeTypedArrayToFile, 2, 0,
+-"writeTypedArrayToFile(filename, data)",
+-"  Write the contents of a typed array to the named file."),
+-
+-    JS_FN_HELP("redirect", osfile_redirectOutput, 1, 0,
+-"redirect([path-or-object])",
+-"  Redirect print() output to the named file.\n"
+-"   Return an opaque object representing the previous destination, which\n"
+-"   may be passed into redirect() later to restore the output."),
+-
+-    JS_FN_HELP("redirectErr", osfile_redirectError, 1, 0,
+-"redirectErr([path-or-object])",
+-"  Same as redirect(), but for printErr"),
+-
+-    JS_FN_HELP("close", osfile_close, 1, 0,
+-"close(object)",
+-"  Close the file returned by an earlier redirect call."),
+-
+     JS_FS_HELP_END
+ };
+ 
+@@ -689,14 +660,6 @@ ospath_join(JSContext* cx, unsigned argc, Value* vp)
+ }
+ 
+ static const JSFunctionSpecWithHelp ospath_functions[] = {
+-    JS_FN_HELP("isAbsolute", ospath_isAbsolute, 1, 0,
+-"isAbsolute(path)",
+-"  Return whether the given path is absolute."),
+-
+-    JS_FN_HELP("join", ospath_join, 1, 0,
+-"join(paths...)",
+-"  Join one or more path components in a platform independent way."),
+-
+     JS_FS_HELP_END
+ };
+ 
+@@ -928,36 +891,6 @@ os_waitpid(JSContext* cx, unsigned argc, Value* vp)
+ #endif
+ 
+ static const JSFunctionSpecWithHelp os_functions[] = {
+-    JS_FN_HELP("getenv", os_getenv, 1, 0,
+-"getenv(variable)",
+-"  Get the value of an environment variable."),
+-
+-    JS_FN_HELP("getpid", os_getpid, 0, 0,
+-"getpid()",
+-"  Return the current process id."),
+-
+-    JS_FN_HELP("system", os_system, 1, 0,
+-"system(command)",
+-"  Execute command on the current host, returning result code or throwing an\n"
+-"  exception on failure."),
+-
+-#ifndef XP_WIN
+-    JS_FN_HELP("spawn", os_spawn, 1, 0,
+-"spawn(command)",
+-"  Start up a separate process running the given command. Returns the pid."),
+-
+-    JS_FN_HELP("kill", os_kill, 1, 0,
+-"kill(pid[, signal])",
+-"  Send a signal to the given pid. The default signal is SIGINT. The signal\n"
+-"  passed in must be numeric, if given."),
+-
+-    JS_FN_HELP("waitpid", os_waitpid, 1, 0,
+-"waitpid(pid[, nohang])",
+-"  Calls waitpid(). 'nohang' is a boolean indicating whether to pass WNOHANG.\n"
+-"  The return value is an object containing a 'pid' field, if a process was waitable\n"
+-"  and an 'exitStatus' field if a pid exited."),
+-#endif
+-
+     JS_FS_HELP_END
+ };
+ 
+@@ -966,6 +899,7 @@ DefineOS(JSContext* cx, HandleObject global,
+          bool fuzzingSafe,
+          RCFile** shellOut, RCFile** shellErr)
+ {
++    return true;
+     RootedObject obj(cx, JS_NewPlainObject(cx));
+     if (!obj || !JS_DefineProperty(cx, global, "os", obj, 0))
+         return false;
+diff --git a/js/src/shell/js.cpp b/js/src/shell/js.cpp
+index 60d7b465bd9d..b8dd350bd1c3 100644
+--- a/js/src/shell/js.cpp
++++ b/js/src/shell/js.cpp
+@@ -201,7 +201,7 @@ static_assert(GlobalAppSlotCount <= JSCLASS_GLOBAL_APPLICATION_SLOTS,
+ #if defined(MOZ_ASAN) || (defined(DEBUG) && !defined(XP_WIN))
+ static const size_t gMaxStackSize = 2 * 128 * sizeof(size_t) * 1024;
+ #else
+-static const size_t gMaxStackSize = 128 * sizeof(size_t) * 1024;
++static const size_t gMaxStackSize = 2 * 128 * sizeof(size_t) * 1024;
+ #endif
+ 
+ /*
+@@ -7226,706 +7226,21 @@ WasmLoop(JSContext* cx, unsigned argc, Value* vp)
+ }
+ 
+ static const JSFunctionSpecWithHelp shell_functions[] = {
+-    JS_FN_HELP("clone", Clone, 1, 0,
+-"clone(fun[, scope])",
+-"  Clone function object."),
+-
+-    JS_FN_HELP("options", Options, 0, 0,
+-"options([option ...])",
+-"  Get or toggle JavaScript options."),
+-
+-    JS_FN_HELP("load", Load, 1, 0,
+-"load(['foo.js' ...])",
+-"  Load files named by string arguments. Filename is relative to the\n"
+-"      current working directory."),
+-
+-    JS_FN_HELP("loadRelativeToScript", LoadScriptRelativeToScript, 1, 0,
+-"loadRelativeToScript(['foo.js' ...])",
+-"  Load files named by string arguments. Filename is relative to the\n"
+-"      calling script."),
+-
+-    JS_FN_HELP("evaluate", Evaluate, 2, 0,
+-"evaluate(code[, options])",
+-"  Evaluate code as though it were the contents of a file.\n"
+-"  options is an optional object that may have these properties:\n"
+-"      isRunOnce: use the isRunOnce compiler option (default: false)\n"
+-"      noScriptRval: use the no-script-rval compiler option (default: false)\n"
+-"      fileName: filename for error messages and debug info\n"
+-"      lineNumber: starting line number for error messages and debug info\n"
+-"      columnNumber: starting column number for error messages and debug info\n"
+-"      global: global in which to execute the code\n"
+-"      newContext: if true, create and use a new cx (default: false)\n"
+-"      catchTermination: if true, catch termination (failure without\n"
+-"         an exception value, as for slow scripts or out-of-memory)\n"
+-"         and return 'terminated'\n"
+-"      element: if present with value |v|, convert |v| to an object |o| and\n"
+-"         mark the source as being attached to the DOM element |o|. If the\n"
+-"         property is omitted or |v| is null, don't attribute the source to\n"
+-"         any DOM element.\n"
+-"      elementAttributeName: if present and not undefined, the name of\n"
+-"         property of 'element' that holds this code. This is what\n"
+-"         Debugger.Source.prototype.elementAttributeName returns.\n"
+-"      sourceMapURL: if present with value |v|, convert |v| to a string, and\n"
+-"         provide that as the code's source map URL. If omitted, attach no\n"
+-"         source map URL to the code (although the code may provide one itself,\n"
+-"         via a //#sourceMappingURL comment).\n"
+-"      sourceIsLazy: if present and true, indicates that, after compilation, \n"
+-"          script source should not be cached by the JS engine and should be \n"
+-"          lazily loaded from the embedding as-needed.\n"
+-"      loadBytecode: if true, and if the source is a CacheEntryObject,\n"
+-"         the bytecode would be loaded and decoded from the cache entry instead\n"
+-"         of being parsed, then it would be executed as usual.\n"
+-"      saveBytecode: if true, and if the source is a CacheEntryObject,\n"
+-"         the bytecode would be encoded and saved into the cache entry after\n"
+-"         the script execution.\n"
+-"      assertEqBytecode: if true, and if both loadBytecode and saveBytecode are \n"
+-"         true, then the loaded bytecode and the encoded bytecode are compared.\n"
+-"         and an assertion is raised if they differ.\n"
+-"      envChainObject: object to put on the scope chain, with its fields added\n"
+-"         as var bindings, akin to how elements are added to the environment in\n"
+-"         event handlers in Gecko.\n"
+-),
+-
+-    JS_FN_HELP("run", Run, 1, 0,
+-"run('foo.js')",
+-"  Run the file named by the first argument, returning the number of\n"
+-"  of milliseconds spent compiling and executing it."),
+-
+-    JS_FN_HELP("readline", ReadLine, 0, 0,
+-"readline()",
+-"  Read a single line from stdin."),
+-
+-    JS_FN_HELP("readlineBuf", ReadLineBuf, 1, 0,
+-"readlineBuf([ buf ])",
+-"  Emulate readline() on the specified string. The first call with a string\n"
+-"  argument sets the source buffer. Subsequent calls without an argument\n"
+-"  then read from this buffer line by line.\n"),
+-
+     JS_FN_HELP("print", Print, 0, 0,
+-"print([exp ...])",
+-"  Evaluate and print expressions to stdout."),
+-
+-    JS_FN_HELP("printErr", PrintErr, 0, 0,
+-"printErr([exp ...])",
+-"  Evaluate and print expressions to stderr."),
+-
+-    JS_FN_HELP("putstr", PutStr, 0, 0,
+-"putstr([exp])",
+-"  Evaluate and print expression without newline."),
+-
+-    JS_FN_HELP("dateNow", Now, 0, 0,
+-"dateNow()",
+-"  Return the current time with sub-ms precision."),
+-
+-    JS_FN_HELP("help", Help, 0, 0,
+-"help([function or interface object or /pattern/])",
+-"  Display usage and help messages."),
+-
+-    JS_FN_HELP("quit", Quit, 0, 0,
+-"quit()",
+-"  Quit the shell."),
+-
+-    JS_FN_HELP("assertEq", AssertEq, 2, 0,
+-"assertEq(actual, expected[, msg])",
+-"  Throw if the first two arguments are not the same (both +0 or both -0,\n"
+-"  both NaN, or non-zero and ===)."),
+-
+-    JS_FN_HELP("startTimingMutator", StartTimingMutator, 0, 0,
+-"startTimingMutator()",
+-"  Start accounting time to mutator vs GC."),
+-
+-    JS_FN_HELP("stopTimingMutator", StopTimingMutator, 0, 0,
+-"stopTimingMutator()",
+-"  Stop accounting time to mutator vs GC and dump the results."),
+-
+-    JS_FN_HELP("throwError", ThrowError, 0, 0,
+-"throwError()",
+-"  Throw an error from JS_ReportError."),
+-
+-#if defined(DEBUG) || defined(JS_JITSPEW)
+-    JS_FN_HELP("disassemble", DisassembleToString, 1, 0,
+-"disassemble([fun/code])",
+-"  Return the disassembly for the given function or code.\n"
+-"  All disassembly functions take these options as leading string arguments:\n"
+-"    \"-r\" (disassemble recursively)\n"
+-"    \"-l\" (show line numbers)\n"
+-"    \"-S\" (omit source notes)"),
+-
+-    JS_FN_HELP("dis", Disassemble, 1, 0,
+-"dis([fun/code])",
+-"  Disassemble functions into bytecodes."),
+-
+-    JS_FN_HELP("disfile", DisassFile, 1, 0,
+-"disfile('foo.js')",
+-"  Disassemble script file into bytecodes.\n"),
+-
+-    JS_FN_HELP("dissrc", DisassWithSrc, 1, 0,
+-"dissrc([fun/code])",
+-"  Disassemble functions with source lines."),
+-
+-    JS_FN_HELP("notes", Notes, 1, 0,
+-"notes([fun])",
+-"  Show source notes for functions."),
+-
+-    JS_FN_HELP("stackDump", StackDump, 3, 0,
+-"stackDump(showArgs, showLocals, showThisProps)",
+-"  Tries to print a lot of information about the current stack. \n"
+-"  Similar to the DumpJSStack() function in the browser."),
+-
+-#endif
+-    JS_FN_HELP("intern", Intern, 1, 0,
+-"intern(str)",
+-"  Internalize str in the atom table."),
+-
+-    JS_FN_HELP("getslx", GetSLX, 1, 0,
+-"getslx(obj)",
+-"  Get script line extent."),
+-
+-    JS_FN_HELP("evalcx", EvalInContext, 1, 0,
+-"evalcx(s[, o])",
+-"  Evaluate s in optional sandbox object o.\n"
+-"  if (s == '' && !o) return new o with eager standard classes\n"
+-"  if (s == 'lazy' && !o) return new o with lazy standard classes"),
+-
+-    JS_FN_HELP("evalInWorker", EvalInWorker, 1, 0,
+-"evalInWorker(str)",
+-"  Evaluate 'str' in a separate thread with its own runtime.\n"),
+-
+-    JS_FN_HELP("getSharedObject", GetSharedObject, 0, 0,
+-"getSharedObject()",
+-"  Retrieve the shared object from the cross-worker mailbox.\n"
+-"  The object retrieved may not be identical to the object that was\n"
+-"  installed, but it references the same shared memory.\n"
+-"  getSharedObject performs an ordering memory barrier.\n"),
+-
+-    JS_FN_HELP("setSharedObject", SetSharedObject, 0, 0,
+-"setSharedObject(obj)",
+-"  Install the shared object in the cross-worker mailbox.  The object\n"
+-"  may be null.  setSharedObject performs an ordering memory barrier.\n"),
+-
+-    JS_FN_HELP("getSharedArrayBuffer", GetSharedObject, 0, 0,
+-"getSharedArrayBuffer()",
+-"  Obsolete alias for getSharedObject().\n"),
+-
+-    JS_FN_HELP("setSharedArrayBuffer", SetSharedObject, 0, 0,
+-"setSharedArrayBuffer(obj)",
+-"  Obsolete alias for setSharedObject(obj).\n"),
+-
+-    JS_FN_HELP("shapeOf", ShapeOf, 1, 0,
+-"shapeOf(obj)",
+-"  Get the shape of obj (an implementation detail)."),
+-
+-    JS_FN_HELP("groupOf", GroupOf, 1, 0,
+-"groupOf(obj)",
+-"  Get the group of obj (an implementation detail)."),
+-
+-    JS_FN_HELP("unwrappedObjectsHaveSameShape", UnwrappedObjectsHaveSameShape, 2, 0,
+-"unwrappedObjectsHaveSameShape(obj1, obj2)",
+-"  Returns true iff obj1 and obj2 have the same shape, false otherwise. Both\n"
+-"  objects are unwrapped first, so this can be used on objects from different\n"
+-"  globals."),
+-
+-#ifdef DEBUG
+-    JS_FN_HELP("arrayInfo", ArrayInfo, 1, 0,
+-"arrayInfo(a1, a2, ...)",
+-"  Report statistics about arrays."),
+-#endif
+-
+-    JS_FN_HELP("sleep", Sleep_fn, 1, 0,
+-"sleep(dt)",
+-"  Sleep for dt seconds."),
+-
+-    JS_FN_HELP("compile", Compile, 1, 0,
+-"compile(code)",
+-"  Compiles a string to bytecode, potentially throwing."),
+-
+-    JS_FN_HELP("parseModule", ParseModule, 1, 0,
+-"parseModule(code)",
+-"  Parses source text as a module and returns a script object."),
+-
+-    JS_FN_HELP("instantiateModule", InstantiateModule, 1, 0,
+-"instantiateModule(moduleScript)",
+-"  Instantiate a module script graph."),
+-
+-    JS_FN_HELP("evaluateModule", EvaluateModule, 1, 0,
+-"evaluateModule(moduleScript)",
+-"  Evaluate a previously instantiated module script graph."),
+-
+-    JS_FN_HELP("setModuleLoadHook", SetModuleLoadHook, 1, 0,
+-"setModuleLoadHook(function(path))",
+-"  Set the shell specific module load hook to |function|.\n"
+-"  This hook is used to load a module graph.  It should be implemented by the\n"
+-"  module loader."),
+-
+-    JS_FN_HELP("setModuleResolveHook", SetModuleResolveHook, 1, 0,
+-"setModuleResolveHook(function(module, specifier) {})",
+-"  Set the HostResolveImportedModule hook to |function|.\n"
+-"  This hook is used to look up a previously loaded module object.  It should\n"
+-"  be implemented by the module loader."),
+-
+-    JS_FN_HELP("getModuleLoadPath", GetModuleLoadPath, 0, 0,
+-"getModuleLoadPath()",
+-"  Return any --module-load-path argument passed to the shell.  Used by the\n"
+-"  module loader.\n"),
+-
+-    JS_FN_HELP("getModuleEnvironmentNames", GetModuleEnvironmentNames, 1, 0,
+-"getModuleEnvironmentNames(module)",
+-"  Get the list of a module environment's bound names for a specified module.\n"),
+-
+-    JS_FN_HELP("getModuleEnvironmentValue", GetModuleEnvironmentValue, 2, 0,
+-"getModuleEnvironmentValue(module, name)",
+-"  Get the value of a bound name in a module environment.\n"),
+-
+-    JS_FN_HELP("getModuleObject", GetModuleObject, 1, 0,
+-"getModuleObject(module)",
+-"  Get the internal JS object that holds module metadata for a module script.\n"),
+-
+-#if defined(JS_BUILD_BINAST)
+-
+-JS_FN_HELP("parseBin", BinParse, 1, 0,
+-"parseBin(arraybuffer)",
+-"  Parses a Binary AST, potentially throwing."),
+-
+-#endif // defined(JS_BUILD_BINAST)
+-
+-    JS_FN_HELP("parse", Parse, 1, 0,
+-"parse(code)",
+-"  Parses a string, potentially throwing."),
+-
+-    JS_FN_HELP("syntaxParse", SyntaxParse, 1, 0,
+-"syntaxParse(code)",
+-"  Check the syntax of a string, returning success value"),
+-
+-    JS_FN_HELP("offThreadCompileScript", OffThreadCompileScript, 1, 0,
+-"offThreadCompileScript(code[, options])",
+-"  Compile |code| on a helper thread, returning a job ID.\n"
+-"  To wait for the compilation to finish and run the code, call\n"
+-"  |runOffThreadScript| passing the job ID. If present, |options| may\n"
+-"  have properties saying how the code should be compiled:\n"
+-"      noScriptRval: use the no-script-rval compiler option (default: false)\n"
+-"      fileName: filename for error messages and debug info\n"
+-"      lineNumber: starting line number for error messages and debug info\n"
+-"      columnNumber: starting column number for error messages and debug info\n"
+-"      element: if present with value |v|, convert |v| to an object |o| and\n"
+-"         mark the source as being attached to the DOM element |o|. If the\n"
+-"         property is omitted or |v| is null, don't attribute the source to\n"
+-"         any DOM element.\n"
+-"      elementAttributeName: if present and not undefined, the name of\n"
+-"         property of 'element' that holds this code. This is what\n"
+-"         Debugger.Source.prototype.elementAttributeName returns."),
+-
+-    JS_FN_HELP("runOffThreadScript", runOffThreadScript, 0, 0,
+-"runOffThreadScript([jobID])",
+-"  Wait for an off-thread compilation job to complete. The job ID can be\n"
+-"  ommitted if there is only one job pending. If an error occurred,\n"
+-"  throw the appropriate exception; otherwise, run the script and return\n"
+-"  its value."),
+-
+-    JS_FN_HELP("offThreadCompileModule", OffThreadCompileModule, 1, 0,
+-"offThreadCompileModule(code)",
+-"  Compile |code| on a helper thread, returning a job ID. To wait for the\n"
+-"  compilation to finish and and get the module record object call\n"
+-"  |finishOffThreadModule| passing the job ID."),
+-
+-    JS_FN_HELP("finishOffThreadModule", FinishOffThreadModule, 0, 0,
+-"finishOffThreadModule([jobID])",
+-"  Wait for an off-thread compilation job to complete. The job ID can be\n"
+-"  ommitted if there is only one job pending. If an error occurred,\n"
+-"  throw the appropriate exception; otherwise, return the module record object."),
+-
+-    JS_FN_HELP("offThreadDecodeScript", OffThreadDecodeScript, 1, 0,
+-"offThreadDecodeScript(cacheEntry[, options])",
+-"  Decode |code| on a helper thread, returning a job ID. To wait for the\n"
+-"  decoding to finish and run the code, call |runOffThreadDecodeScript| passing\n"
+-"  the job ID. If present, |options| may have properties saying how the code\n"
+-"  should be compiled (see also offThreadCompileScript)."),
+-
+-    JS_FN_HELP("runOffThreadDecodedScript", runOffThreadDecodedScript, 0, 0,
+-"runOffThreadDecodedScript([jobID])",
+-"  Wait for off-thread decoding to complete. The job ID can be ommitted if there\n"
+-"  is only one job pending. If an error occurred, throw the appropriate\n"
+-"  exception; otherwise, run the script and return its value."),
+-
+-    JS_FN_HELP("timeout", Timeout, 1, 0,
+-"timeout([seconds], [func])",
+-"  Get/Set the limit in seconds for the execution time for the current context.\n"
+-"  A negative value (default) means that the execution time is unlimited.\n"
+-"  If a second argument is provided, it will be invoked when the timer elapses.\n"
+-"  Calling this function will replace any callback set by |setInterruptCallback|.\n"),
+-
+-    JS_FN_HELP("interruptIf", InterruptIf, 1, 0,
+-"interruptIf(cond)",
+-"  Requests interrupt callback if cond is true. If a callback function is set via\n"
+-"  |timeout| or |setInterruptCallback|, it will be called. No-op otherwise."),
+-
+-    JS_FN_HELP("invokeInterruptCallback", InvokeInterruptCallbackWrapper, 0, 0,
+-"invokeInterruptCallback(fun)",
+-"  Forcefully set the interrupt flag and invoke the interrupt handler. If a\n"
+-"  callback function is set via |timeout| or |setInterruptCallback|, it will\n"
+-"  be called. Before returning, fun is called with the return value of the\n"
+-"  interrupt handler."),
+-
+-    JS_FN_HELP("setInterruptCallback", SetInterruptCallback, 1, 0,
+-"setInterruptCallback(func)",
+-"  Sets func as the interrupt callback function.\n"
+-"  Calling this function will replace any callback set by |timeout|.\n"),
+-
+-    JS_FN_HELP("enableLastWarning", EnableLastWarning, 0, 0,
+-"enableLastWarning()",
+-"  Enable storing the last warning."),
+-
+-    JS_FN_HELP("disableLastWarning", DisableLastWarning, 0, 0,
+-"disableLastWarning()",
+-"  Disable storing the last warning."),
+-
+-    JS_FN_HELP("getLastWarning", GetLastWarning, 0, 0,
+-"getLastWarning()",
+-"  Returns an object that represents the last warning."),
+-
+-    JS_FN_HELP("clearLastWarning", ClearLastWarning, 0, 0,
+-"clearLastWarning()",
+-"  Clear the last warning."),
+-
+-    JS_FN_HELP("elapsed", Elapsed, 0, 0,
+-"elapsed()",
+-"  Execution time elapsed for the current thread."),
+-
+-    JS_FN_HELP("decompileFunction", DecompileFunction, 1, 0,
+-"decompileFunction(func)",
+-"  Decompile a function."),
+-
+-    JS_FN_HELP("decompileThis", DecompileThisScript, 0, 0,
+-"decompileThis()",
+-"  Decompile the currently executing script."),
+-
+-    JS_FN_HELP("thisFilename", ThisFilename, 0, 0,
+-"thisFilename()",
+-"  Return the filename of the current script"),
+-
+-    JS_FN_HELP("newGlobal", NewGlobal, 1, 0,
+-"newGlobal([options])",
+-"  Return a new global object in a new realm. If options\n"
+-"  is given, it may have any of the following properties:\n"
+-"\n"
+-"      sameZoneAs: The compartment will be in the same zone as the given\n"
+-"         object (defaults to a new zone).\n"
+-"      sameCompartmentAs: The global will be in the same compartment and\n"
+-"         zone as the given object (defaults to a new compartment).\n"
+-"      cloneSingletons: If true, always clone the objects baked into\n"
+-"         scripts, even if it's a top-level script that will only run once\n"
+-"         (defaults to using them directly in scripts that will only run\n"
+-"         once).\n"
+-"      invisibleToDebugger: If true, the global will be invisible to the\n"
+-"         debugger (default false)\n"
+-"      disableLazyParsing: If true, don't create lazy scripts for functions\n"
+-"         (default false).\n"
+-"      principal: if present, its value converted to a number must be an\n"
+-"         integer that fits in 32 bits; use that as the new realm's\n"
+-"         principal. Shell principals are toys, meant only for testing; one\n"
+-"         shell principal subsumes another if its set bits are a superset of\n"
+-"         the other's. Thus, a principal of 0 subsumes nothing, while a\n"
+-"         principals of ~0 subsumes all other principals. The absence of a\n"
+-"         principal is treated as if its bits were 0xffff, for subsumption\n"
+-"         purposes. If this property is omitted, supply no principal.\n"
+-"      systemPrincipal: If true, use the shell's trusted principals for the\n"
+-"         new realm. This creates a realm that's marked as a 'system' realm."),
+-
+-    JS_FN_HELP("nukeCCW", NukeCCW, 1, 0,
+-"nukeCCW(wrapper)",
+-"  Nuke a CrossCompartmentWrapper, which turns it into a DeadProxyObject."),
+-
+-    JS_FN_HELP("nukeAllCCWs", NukeAllCCWs, 0, 0,
+-"nukeAllCCWs()",
+-"  Like nukeCCW, but for all CrossCompartmentWrappers targeting the current compartment."),
+-
+-    JS_FN_HELP("wrapWithProto", WrapWithProto, 2, 0,
+-"wrapWithProto(obj)",
+-"  Wrap an object into a noop wrapper with prototype semantics."),
+-
+-    JS_FN_HELP("createMappedArrayBuffer", CreateMappedArrayBuffer, 1, 0,
+-"createMappedArrayBuffer(filename, [offset, [size]])",
+-"  Create an array buffer that mmaps the given file."),
+-
+-    JS_FN_HELP("addPromiseReactions", AddPromiseReactions, 3, 0,
+-"addPromiseReactions(promise, onResolve, onReject)",
+-"  Calls the JS::AddPromiseReactions JSAPI function with the given arguments."),
+-
+-    JS_FN_HELP("getMaxArgs", GetMaxArgs, 0, 0,
+-"getMaxArgs()",
+-"  Return the maximum number of supported args for a call."),
+-
+-    JS_FN_HELP("createIsHTMLDDA", CreateIsHTMLDDA, 0, 0,
+-"createIsHTMLDDA()",
+-"  Return an object |obj| that \"looks like\" the |document.all| object in\n"
+-"  browsers in certain ways: |typeof obj === \"undefined\"|, |obj == null|\n"
+-"  and |obj == undefined| (vice versa for !=), |ToBoolean(obj) === false|,\n"
+-"  and when called with no arguments or the single argument \"\" returns\n"
+-"  null.  (Calling |obj| any other way crashes or throws an exception.)\n"
+-"  This function implements the exact requirements of the $262.IsHTMLDDA\n"
+-"  property in test262."),
+-
+-    JS_FN_HELP("isCachingEnabled", IsCachingEnabled, 0, 0,
+-"isCachingEnabled()",
+-"  Return whether JS caching is enabled."),
+-
+-    JS_FN_HELP("setCachingEnabled", SetCachingEnabled, 1, 0,
+-"setCachingEnabled(b)",
+-"  Enable or disable JS caching."),
+-
+-    JS_FN_HELP("cacheEntry", CacheEntry, 1, 0,
+-"cacheEntry(code)",
+-"  Return a new opaque object which emulates a cache entry of a script.  This\n"
+-"  object encapsulates the code and its cached content. The cache entry is filled\n"
+-"  and read by the \"evaluate\" function by using it in place of the source, and\n"
+-"  by setting \"saveBytecode\" and \"loadBytecode\" options."),
+-
+-    JS_FN_HELP("printProfilerEvents", PrintProfilerEvents, 0, 0,
+-"printProfilerEvents()",
+-"  Register a callback with the profiler that prints javascript profiler events\n"
+-"  to stderr.  Callback is only registered if profiling is enabled."),
+-
+-    JS_FN_HELP("enableSingleStepProfiling", EnableSingleStepProfiling, 0, 0,
+-"enableSingleStepProfiling()",
+-"  This function will fail on platforms that don't support single-step profiling\n"
+-"  (currently ARM and MIPS64 support it). When enabled, at every instruction a\n"
+-"  backtrace will be recorded and stored in an array. Adjacent duplicate backtraces\n"
+-"  are discarded."),
+-
+-    JS_FN_HELP("disableSingleStepProfiling", DisableSingleStepProfiling, 0, 0,
+-"disableSingleStepProfiling()",
+-"  Return the array of backtraces recorded by enableSingleStepProfiling."),
+-
+-    JS_FN_HELP("enableGeckoProfiling", EnableGeckoProfiling, 0, 0,
+-"enableGeckoProfiling()",
+-"  Enables Gecko Profiler instrumentation and corresponding assertions, with slow\n"
+-"  assertions disabled.\n"),
+-
+-    JS_FN_HELP("enableGeckoProfilingWithSlowAssertions", EnableGeckoProfilingWithSlowAssertions, 0, 0,
+-"enableGeckoProfilingWithSlowAssertions()",
+-"  Enables Gecko Profiler instrumentation and corresponding assertions, with slow\n"
+-"  assertions enabled.\n"),
+-
+-    JS_FN_HELP("disableGeckoProfiling", DisableGeckoProfiling, 0, 0,
+-"disableGeckoProfiling()",
+-"  Disables Gecko Profiler instrumentation"),
+-
+-    JS_FN_HELP("isLatin1", IsLatin1, 1, 0,
+-"isLatin1(s)",
+-"  Return true iff the string's characters are stored as Latin1."),
+-
+-    JS_FN_HELP("unboxedObjectsEnabled", UnboxedObjectsEnabled, 0, 0,
+-"unboxedObjectsEnabled()",
+-"  Return true if unboxed objects are enabled."),
+-
+-    JS_FN_HELP("isUnboxedObject", IsUnboxedObject, 1, 0,
+-"isUnboxedObject(o)",
+-"  Return true iff the object is an unboxed object."),
+-
+-    JS_FN_HELP("hasCopyOnWriteElements", HasCopyOnWriteElements, 1, 0,
+-"hasCopyOnWriteElements(o)",
+-"  Return true iff the object has copy-on-write dense elements."),
+-
+-    JS_FN_HELP("stackPointerInfo", StackPointerInfo, 0, 0,
+-"stackPointerInfo()",
+-"  Return an int32 value which corresponds to the offset of the latest stack\n"
+-"  pointer, such that one can take the differences of 2 to estimate a frame-size."),
+-
+-    JS_FN_HELP("entryPoints", EntryPoints, 1, 0,
+-"entryPoints(params)",
+-"Carry out some JSAPI operation as directed by |params|, and return an array of\n"
+-"objects describing which JavaScript entry points were invoked as a result.\n"
+-"|params| is an object whose properties indicate what operation to perform. Here\n"
+-"are the recognized groups of properties:\n"
+-"\n"
+-"{ function }: Call the object |params.function| with no arguments.\n"
+-"\n"
+-"{ object, property }: Fetch the property named |params.property| of\n"
+-"|params.object|.\n"
+-"\n"
+-"{ ToString }: Apply JS::ToString to |params.toString|.\n"
+-"\n"
+-"{ ToNumber }: Apply JS::ToNumber to |params.toNumber|.\n"
+-"\n"
+-"{ eval }: Apply JS::Evaluate to |params.eval|.\n"
+-"\n"
+-"The return value is an array of strings, with one element for each\n"
+-"JavaScript invocation that occurred as a result of the given\n"
+-"operation. Each element is the name of the function invoked, or the\n"
+-"string 'eval:FILENAME' if the code was invoked by 'eval' or something\n"
+-"similar.\n"),
+-
+-    JS_FN_HELP("enqueueJob", EnqueueJob, 1, 0,
+-"enqueueJob(fn)",
+-"  Enqueue 'fn' on the shell's job queue."),
+-
+-    JS_FN_HELP("drainJobQueue", DrainJobQueue, 0, 0,
+-"drainJobQueue()",
+-"Take jobs from the shell's job queue in FIFO order and run them until the\n"
+-"queue is empty.\n"),
+-
+-    JS_FN_HELP("setPromiseRejectionTrackerCallback", SetPromiseRejectionTrackerCallback, 1, 0,
+-"setPromiseRejectionTrackerCallback()",
+-"Sets the callback to be invoked whenever a Promise rejection is unhandled\n"
+-"or a previously-unhandled rejection becomes handled."),
+-
+-    JS_FN_HELP("dumpScopeChain", DumpScopeChain, 1, 0,
+-"dumpScopeChain(obj)",
+-"  Prints the scope chain of an interpreted function or a module."),
+-
+-    JS_FN_HELP("grayRoot", EnsureGrayRoot, 0, 0,
+-"grayRoot()",
+-"  Create a gray root Array, if needed, for the current compartment, and\n"
+-"  return it."),
+-
+-    JS_FN_HELP("addMarkObservers", AddMarkObservers, 1, 0,
+-"addMarkObservers(array_of_objects)",
+-"  Register an array of objects whose mark bits will be tested by calls to\n"
+-"  getMarks. The objects will be in calling compartment. Objects from\n"
+-"  multiple compartments may be monitored by calling this function in\n"
+-"  different compartments."),
+-
+-    JS_FN_HELP("clearMarkObservers", ClearMarkObservers, 1, 0,
+-"clearMarkObservers()",
+-"  Clear out the list of objects whose mark bits will be tested.\n"),
+-
+-    JS_FN_HELP("getMarks", GetMarks, 0, 0,
+-"getMarks()",
+-"  Return an array of strings representing the current state of the mark\n"
+-"  bits ('gray' or 'black', or 'dead' if the object has been collected)\n"
+-"  for the objects registered via addMarkObservers. Note that some of the\n"
+-"  objects tested may be from different compartments than the one in which\n"
+-"  this function runs."),
+-
+-    JS_FN_HELP("bindToAsyncStack", BindToAsyncStack, 2, 0,
+-"bindToAsyncStack(fn, { stack, cause, explicit })",
+-"  Returns a new function that calls 'fn' with no arguments, passing\n"
+-"  'undefined' as the 'this' value, and supplies an async stack for the\n"
+-"  call as described by the second argument, an object with the following\n"
+-"  properties (which are not optional, unless specified otherwise):\n"
+-"\n"
+-"  stack:    A SavedFrame object, like that returned by 'saveStack'. Stacks\n"
+-"            captured during calls to the returned function capture this as\n"
+-"            their async stack parent, accessible via a SavedFrame's\n"
+-"            'asyncParent' property.\n"
+-"\n"
+-"  cause:    A string, supplied as the async cause on the top frame of\n"
+-"            captured async stacks.\n"
+-"\n"
+-"  explicit: A boolean value, indicating whether the given 'stack' should\n"
+-"            always supplant the returned function's true callers (true),\n"
+-"            or only when there are no other JavaScript frames on the stack\n"
+-"            below it (false). If omitted, this is treated as 'true'."),
+-
+-#ifdef ENABLE_INTL_API
+-    JS_FN_HELP("addIntlExtras", AddIntlExtras, 1, 0,
+-"addIntlExtras(obj)",
+-"Adds various not-yet-standardized Intl functions as properties on the\n"
+-"provided object (this should generally be Intl itself).  The added\n"
+-"functions and their behavior are experimental: don't depend upon them\n"
+-"unless you're willing to update your code if these experimental APIs change\n"
+-"underneath you."),
+-#endif // ENABLE_INTL_API
+-
++    "print([exp ...])",
++    "  Evaluate and print expressions to stdout."),
+     JS_FS_HELP_END
+ };
+ 
+ static const JSFunctionSpecWithHelp fuzzing_unsafe_functions[] = {
+-    JS_FN_HELP("getSelfHostedValue", GetSelfHostedValue, 1, 0,
+-"getSelfHostedValue()",
+-"  Get a self-hosted value by its name. Note that these values don't get \n"
+-"  cached, so repeatedly getting the same value creates multiple distinct clones."),
+-
+-    JS_FN_HELP("line2pc", LineToPC, 0, 0,
+-"line2pc([fun,] line)",
+-"  Map line number to PC."),
+-
+-    JS_FN_HELP("pc2line", PCToLine, 0, 0,
+-"pc2line(fun[, pc])",
+-"  Map PC to line number."),
+-
+-    JS_FN_HELP("nestedShell", NestedShell, 0, 0,
+-"nestedShell(shellArgs...)",
+-"  Execute the given code in a new JS shell process, passing this nested shell\n"
+-"  the arguments passed to nestedShell. argv[0] of the nested shell will be argv[0]\n"
+-"  of the current shell (which is assumed to be the actual path to the shell.\n"
+-"  arguments[0] (of the call to nestedShell) will be argv[1], arguments[1] will\n"
+-"  be argv[2], etc."),
+-
+-    JS_INLINABLE_FN_HELP("assertFloat32", testingFunc_assertFloat32, 2, 0, TestAssertFloat32,
+-"assertFloat32(value, isFloat32)",
+-"  In IonMonkey only, asserts that value has (resp. hasn't) the MIRType::Float32 if isFloat32 is true (resp. false)."),
+-
+-    JS_INLINABLE_FN_HELP("assertRecoveredOnBailout", testingFunc_assertRecoveredOnBailout, 2, 0,
+-TestAssertRecoveredOnBailout,
+-"assertRecoveredOnBailout(var)",
+-"  In IonMonkey only, asserts that variable has RecoveredOnBailout flag."),
+-
+-    JS_FN_HELP("withSourceHook", WithSourceHook, 1, 0,
+-"withSourceHook(hook, fun)",
+-"  Set this JS runtime's lazy source retrieval hook (that is, the hook\n"
+-"  used to find sources compiled with |CompileOptions::LAZY_SOURCE|) to\n"
+-"  |hook|; call |fun| with no arguments; and then restore the runtime's\n"
+-"  original hook. Return or throw whatever |fun| did. |hook| gets\n"
+-"  passed the requested code's URL, and should return a string.\n"
+-"\n"
+-"  Notes:\n"
+-"\n"
+-"  1) SpiderMonkey may assert if the returned code isn't close enough\n"
+-"  to the script's real code, so this function is not fuzzer-safe.\n"
+-"\n"
+-"  2) The runtime can have only one source retrieval hook active at a\n"
+-"  time. If |fun| is not careful, |hook| could be asked to retrieve the\n"
+-"  source code for compilations that occurred long before it was set,\n"
+-"  and that it knows nothing about. The reverse applies as well: the\n"
+-"  original hook, that we reinstate after the call to |fun| completes,\n"
+-"  might be asked for the source code of compilations that |fun|\n"
+-"  performed, and which, presumably, only |hook| knows how to find.\n"),
+-
+-    JS_FN_HELP("trackedOpts", ReflectTrackedOptimizations, 1, 0,
+-"trackedOpts(fun)",
+-"  Returns an object describing the tracked optimizations of |fun|, if\n"
+-"  any. If |fun| is not a scripted function or has not been compiled by\n"
+-"  Ion, null is returned."),
+-
+-    JS_FN_HELP("crash", Crash, 0, 0,
+-"crash([message, [{disable_minidump:true}]])",
+-"  Crashes the process with a MOZ_CRASH, optionally providing a message.\n"
+-"  An options object may be passed as the second argument. If the key\n"
+-"  'suppress_minidump' is set to true, then a minidump will not be\n"
+-"  generated by the crash (which only has an effect if the breakpad\n"
+-"  dumping library is loaded.)"),
+-
+-    JS_FN_HELP("setARMHwCapFlags", SetARMHwCapFlags, 1, 0,
+-"setARMHwCapFlags(\"flag1,flag2 flag3\")",
+-"  On non-ARM, no-op. On ARM, set the hardware capabilities. The list of \n"
+-"  flags is available by calling this function with \"help\" as the flag's name"),
+-
+-    JS_FN_HELP("wasmLoop", WasmLoop, 2, 0,
+-"wasmLoop(filename, imports)",
+-"  Performs an AFL-style persistent loop reading data from the given file and passing it\n"
+-"  to the 'wasmEval' function together with the specified imports object."),
+-
+-    JS_FN_HELP("setBufferStreamParams", SetBufferStreamParams, 2, 0,
+-"setBufferStreamParams(delayMillis, chunkByteSize)",
+-"  Set the delay time (between calls to StreamConsumer::consumeChunk) and chunk\n"
+-"  size (in bytes)."),
+-
+     JS_FS_HELP_END
+ };
+ 
+ static const JSFunctionSpecWithHelp performance_functions[] = {
+-    JS_FN_HELP("now", Now, 0, 0,
+-"now()",
+-"  Return the current time with sub-ms precision.\n"
+-"  This function is an alias of the dateNow() function."),
+     JS_FS_HELP_END
+ };
+ 
+ static const JSFunctionSpecWithHelp console_functions[] = {
+-    JS_FN_HELP("log", Print, 0, 0,
+-"log([exp ...])",
+-"  Evaluate and print expressions to stdout.\n"
+-"  This function is an alias of the print() function."),
+     JS_FS_HELP_END
+ };
+ 
